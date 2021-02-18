@@ -73,7 +73,15 @@ namespace SqlSugar
             {
                 foreach (var item in entityTypes)
                 {
-                    InitTables(item);
+                    try
+                    {
+                        InitTables(item);
+                    }
+                    catch (Exception ex)
+                    {
+
+                        throw new Exception(item.Name +" 创建失败,请认真检查 1、属性需要get set 2、特殊类型需要加Ignore 具体错误内容： "+ex.Message);
+                    }
                 }
             }
         }
@@ -113,6 +121,10 @@ namespace SqlSugar
             entityInfo.DbTableName = tableName;
             entityInfo.Columns.ForEach(it => { it.DbTableName = tableName; });
             var isAny = this.Context.DbMaintenance.IsAnyTable(tableName);
+            if (isAny&&entityInfo.IsDisabledUpdateAll)
+            {
+                return;
+            }
             if (isAny)
                 ExistLogic(entityInfo);
             else
@@ -139,7 +151,7 @@ namespace SqlSugar
         }
         public virtual void ExistLogic(EntityInfo entityInfo)
         {
-            if (entityInfo.Columns.HasValue())
+            if (entityInfo.Columns.HasValue()&&entityInfo.IsDisabledUpdateAll==false)
             {
                 //Check.Exception(entityInfo.Columns.Where(it => it.IsPrimarykey).Count() > 1, "Multiple primary keys do not support modifications");
 
@@ -176,10 +188,13 @@ namespace SqlSugar
                     this.Context.DbMaintenance.AddColumn(tableName, EntityColumnToDbColumn(entityInfo, tableName, item));
                     isChange = true;
                 }
-                foreach (var item in dropColumns)
+                if (entityInfo.IsDisabledDelete==false)
                 {
-                    this.Context.DbMaintenance.DropColumn(tableName, item.DbColumnName);
-                    isChange = true;
+                    foreach (var item in dropColumns)
+                    {
+                        this.Context.DbMaintenance.DropColumn(tableName, item.DbColumnName);
+                        isChange = true;
+                    }
                 }
                 foreach (var item in alterColumns)
                 {
@@ -339,7 +354,10 @@ namespace SqlSugar
             {
                 name = name.TrimStart('U');
             }
-
+            if (name == "char")
+            {
+                name = "string";
+            }
             return name;
         }
 
