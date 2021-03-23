@@ -579,7 +579,7 @@ namespace SqlSugar
         public SqlSugarProvider GetConnection(dynamic configId)
         {
             InitTenant();
-            var db = this._AllClients.FirstOrDefault(it => it.ConnectionConfig.ConfigId == configId);
+            var db = this._AllClients.FirstOrDefault(it =>Convert.ToString(it.ConnectionConfig.ConfigId) ==Convert.ToString(configId));
             if (db == null)
             {
                 Check.Exception(true, "ConfigId was not found {0}", configId);
@@ -588,6 +588,7 @@ namespace SqlSugar
             {
                 db.Context = new SqlSugarProvider(db.ConnectionConfig);
             }
+            var intiAop=db.Context.Aop;
             return db.Context;
         }
         public void ChangeDatabase(dynamic configId)

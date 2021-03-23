@@ -14,6 +14,7 @@ namespace SqlSugar
         internal SqlSugarProvider Context { get; set; }
         internal ISqlBuilder Builder { get; set; }
         internal T[] Entitys { get; set; }
+        internal string Chara { get; set; }
         private MySqlBlueCopy()
         {
 
@@ -24,11 +25,19 @@ namespace SqlSugar
             this.Builder = builder;
             this.Entitys = entitys;
         }
-    
+        public bool ExecuteBlueCopy(string chara) 
+        {
+            this.Chara = chara;
+            return ExecuteBlueCopy();
+        }
+
+
         public bool ExecuteBlueCopy()
         {
             var IsBulkLoad = false;
             if (Entitys == null || Entitys.Length <= 0)
+                return IsBulkLoad;
+            if (Entitys.First() == null && Entitys.Length ==1)
                 return IsBulkLoad;
             DataTable dt = new DataTable();
             Type type = typeof(T);
@@ -74,7 +83,7 @@ namespace SqlSugar
                 // IsolationLevel.Parse
                 MySqlBulkLoader bulk = new MySqlBulkLoader(conn)
                 {
-                    CharacterSet = "UTF8",
+                    CharacterSet = GetChara(),
                     FieldTerminator = ",",
                     FieldQuotationCharacter = '"',
                     EscapeCharacter = '"',
@@ -103,11 +112,28 @@ namespace SqlSugar
             return IsBulkLoad; ;
         }
 
+        private string GetChara()
+        {
+            if (this.Chara == null)
+            {
+                return "UTF8";
+            }
+            else 
+            {
+                return this.Chara;
+            }
+        }
+
         public Task<bool> ExecuteBlueCopyAsync()
         {
             return Task.FromResult(ExecuteBlueCopy());
         }
 
+        public Task<bool> ExecuteBlueCopyAsync(string chara)
+        {
+            this.Chara = chara;
+            return Task.FromResult(ExecuteBlueCopy());
+        }
 
         private void CloseDb()
         {
